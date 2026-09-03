@@ -9,6 +9,7 @@ import {
 import {createAttachmentContentDisposition} from "./content-disposition";
 import {createObjectName} from "./object-key";
 import {registerContentDispositionHeader} from "./request-headers";
+import {createSigV4Presigner} from "./signer";
 import type {
   S3UploadConfig,
   UploadedFile,
@@ -30,6 +31,13 @@ export async function uploadFileWithUppy(
     const objectName = await createObjectName(config.dir, file.name);
     const s3Endpoint = createS3Endpoint(config);
     const objectUrl = createObjectUrl(s3Endpoint, objectName);
+    const signRequest = createSigV4Presigner({
+        accessKeyId,
+        secretAccessKey,
+        sessionToken,
+        region: config.region,
+        endpoint: s3Endpoint,
+    });
     // AWS S3 要求 Multipart 的分片通常至少为 5 MiB，因此小文件强制使用普通 PUT。
     const useMultipart =
         file.size >= config.multipartUploadThreshold && file.size > 5 * 1024 * 1024;
@@ -40,18 +48,8 @@ export async function uploadFileWithUppy(
     });
 
     uppy.use(AwsS3, {
-        s3Endpoint,
-        region: config.region,
-        // Uppy 在准备 S3 请求时读取凭证；这里使用业务接口下发的临时或长期凭证。
-        getCredentials: async () => ({
-            credentials: {
-                accessKeyId,
-                secretAccessKey,
-                sessionToken,
-                expiration: config.expiration,
-            },
-            region: config.region,
-        }),
+        // 使用 SDK 自有的纯 WASM SigV4 签名，兼容没有 crypto.subtle 的 HTTP 页面。
+        signRequest,
         // 固定对象 Key，保证普通上传和所有 Multipart 分片写入同一位置。
         generateObjectKey: () => objectName,
         shouldUseMultipart: () => useMultipart,

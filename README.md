@@ -197,7 +197,7 @@ const config: S3UploadConfig = {
 };
 ```
 
-浏览器直传需要存储桶正确配置 CORS。Multipart 上传还应允许所需请求方法，并暴露 `ETag` 和 `Location` 响应头。由于上传请求会自动写入 `Content-Disposition`，CORS 的 `AllowedHeaders` 还需要包含 `Content-Disposition`。`upload()` 依赖浏览器的 `File` 与 `XMLHttpRequest`，不适用于纯 Node.js 进程。
+浏览器直传需要存储桶正确配置 CORS。Multipart 上传还应允许所需请求方法，并暴露 `ETag` 和 `Location` 响应头。由于上传请求会自动写入 `Content-Disposition`，CORS 的 `AllowedHeaders` 还需要包含 `Content-Disposition`。SDK 使用 `hash-wasm` 生成 SigV4 预签名 URL，因此普通 HTTP 页面也能上传，不依赖仅在安全上下文中可用的 `crypto.subtle`。`upload()` 依赖浏览器的 `File` 与 `XMLHttpRequest`，不适用于纯 Node.js 进程。
 
 上传时 SDK 会保存以下对象元数据，使浏览器直接访问文件地址时按附件下载：
 
