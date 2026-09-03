@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="@ue/sdk 本地文件上传测试页" />
+    <title>@ue/sdk · Upload Lab</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div>
+          <p class="eyebrow">@ue/sdk / local harness</p>
+          <h1>Upload Lab</h1>
+          <p class="subtitle">在浏览器中验证 Uppy、文件指纹和 S3 兼容上传。</p>
+        </div>
+        <span class="status-pill" id="runtime-status">等待配置</span>
+      </header>
+
+      <section class="notice" role="note">
+        <strong>仅限本地测试</strong>
+        <span>页面会在浏览器中使用下方凭证，请勿填写生产环境长期密钥。</span>
+      </section>
+
+      <div class="workspace">
+        <form class="panel config-panel" id="upload-form">
+          <div class="panel-heading">
+            <div>
+              <p class="step">01 / CONNECTION</p>
+              <h2>OSS 授权</h2>
+            </div>
+            <button class="ghost-button" type="button" id="reset-config">清空授权信息</button>
+          </div>
+
+          <div class="fields">
+            <label class="field field-wide">
+              <span>授权接口</span>
+              <input id="auth-url" name="authUrl" value="/api/lqa-game/system/project/common/getOssAuth" required />
+            </label>
+            <label class="field field-wide">
+              <span>Bearer Token（不会保存到项目）</span>
+              <input id="authorization" name="authorization" type="password" placeholder="粘贴登录 Token" autocomplete="off" required />
+            </label>
+            <label class="field">
+              <span>分片阈值（MB）</span>
+              <input id="multipart-threshold" name="multipartThreshold" type="number" value="100" min="5" />
+            </label>
+            <label class="field">
+              <span>分片大小（MB）</span>
+              <input id="part-size" name="partSize" type="number" value="8" min="5" />
+            </label>
+          </div>
+        </form>
+
+        <section class="panel upload-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="step">02 / TRANSFER</p>
+              <h2>选择文件</h2>
+            </div>
+            <span class="file-size" id="file-size">尚未选择</span>
+          </div>
+
+          <label class="drop-zone" id="drop-zone" for="file-input">
+            <input id="file-input" type="file" />
+            <span class="upload-mark" aria-hidden="true">↑</span>
+            <strong id="file-name">点击选择文件</strong>
+            <span>或将文件拖放到这里</span>
+          </label>
+
+          <div class="progress-block" aria-live="polite">
+            <div class="progress-meta">
+              <span id="progress-label">准备就绪</span>
+              <strong id="progress-value">0%</strong>
+            </div>
+            <progress id="upload-progress" max="100" value="0">0%</progress>
+          </div>
+
+          <button class="primary-button" id="upload-button" type="submit" form="upload-form" disabled>
+            开始上传
+          </button>
+        </section>
+      </div>
+
+      <section class="panel result-panel" aria-live="polite">
+        <div class="panel-heading">
+          <div>
+            <p class="step">03 / RESPONSE</p>
+            <h2>运行结果</h2>
+          </div>
+          <button class="ghost-button" id="clear-output" type="button">清空</button>
+        </div>
+        <pre id="output">选择文件后开始测试。</pre>
+      </section>
+    </main>
+
+    <script type="module" src="/app.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "name": "@ue/sdk",
+  "version": "0.1.0",
+  "description": "A framework-agnostic TypeScript SDK.",
+  "private": false,
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "npm run clean && vite build && tsc -p tsconfig.build.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "dev": "vite build --watch",
+    "test": "vite test --config vite.config.ts --host 127.0.0.1",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "sdk",
+    "plugin",
+    "typescript",
+    "vite"
+  ],
+  "author": {
+    "name": "svon",
+    "email": "svon.me@gmail.com",
+    "url": "https://github.com/svonme"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
+  "dependencies": {
+    "@uppy/aws-s3": "^6.0.0",
+    "@uppy/core": "^6.0.0",
+    "hash-wasm": "^4.12.0"
+  }
+}
