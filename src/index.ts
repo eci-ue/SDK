@@ -21,6 +21,7 @@ export {
     StackShaHash,
 } from "./libs/hash";
 export {
+    createAttachmentContentDisposition,
     createFileUrl,
     createObjectName,
     createS3Endpoint,

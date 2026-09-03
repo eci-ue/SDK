@@ -61,6 +61,7 @@ function toError(cause: unknown): Error {
 }
 
 export {createFileUrl, createS3Endpoint, resolveS3Credentials} from "./config";
+export {createAttachmentContentDisposition} from "./content-disposition";
 export {createObjectName} from "./object-key";
 export type {
     FileSignaturePayload,

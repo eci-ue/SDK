@@ -62,7 +62,12 @@ export function createFileUrl(
 ): string {
   // 访问地址优先使用业务公开域名，其次兼容旧版 CDN 配置，最后回退到上传端点。
   const publicBaseUrl = config.publicBaseUrl ?? config.cdnBaseUrl ?? s3Endpoint;
-  return `${publicBaseUrl.replace(/\/$/, "")}/${encodeObjectKey(objectName)}`;
+  return createObjectUrl(publicBaseUrl, objectName);
+}
+
+/** 使用指定 Endpoint 生成对象请求地址，不受 publicBaseUrl 配置影响。 */
+export function createObjectUrl(baseUrl: string, objectName: string): string {
+  return `${baseUrl.replace(/\/$/, "")}/${encodeObjectKey(objectName)}`;
 }
 
 /** 对对象 Key 的每一级路径分别编码，避免将目录分隔符“/”编码掉。 */

@@ -197,7 +197,19 @@ const config: S3UploadConfig = {
 };
 ```
 
-浏览器直传需要存储桶正确配置 CORS。Multipart 上传还应允许所需请求方法，并暴露 `ETag` 和 `Location` 响应头。`upload()` 依赖浏览器的 `File` 与 `XMLHttpRequest`，不适用于纯 Node.js 进程。
+浏览器直传需要存储桶正确配置 CORS。Multipart 上传还应允许所需请求方法，并暴露 `ETag` 和 `Location` 响应头。由于上传请求会自动写入 `Content-Disposition`，CORS 的 `AllowedHeaders` 还需要包含 `Content-Disposition`。`upload()` 依赖浏览器的 `File` 与 `XMLHttpRequest`，不适用于纯 Node.js 进程。
+
+上传时 SDK 会保存以下对象元数据，使浏览器直接访问文件地址时按附件下载：
+
+```http
+Content-Disposition: attachment; filename="example.txt"
+```
+
+中文文件名会同时写入符合 RFC 5987 的 `filename*` 参数，确保下载时恢复原始名称：
+
+```http
+Content-Disposition: attachment; filename="download.txt"; filename*=UTF-8''%E7%A4%BA%E4%BE%8B.txt
+```
 
 ### 上传相关类型
 
@@ -384,11 +396,13 @@ const url = createFileUrl(
 ```ts
 import {createObjectName} from "@ue/sdk";
 
-const objectName = createObjectName("uploads/images", "产品 图.png");
-// 示例："uploads/images/1788422400000-产品_图.png"
+const objectName = await createObjectName("uploads/images", "产品 图.png");
+// 示例："uploads/images/1788422400000-<32 位 MD5>.png"
 ```
 
-文件名中的非常用字符会被替换为 `_`。该方法使用当前时间戳，因此相同参数在不同时间调用可能返回不同结果。
+包含中文的完整文件名会转换为 MD5，并保留合法的 ASCII 扩展名；其他文件名中的
+非常用字符会被替换为 `_`。该方法是异步方法，并使用当前时间戳，因此相同参数在
+不同时间调用可能返回不同结果。
 
 ## 插件辅助方法
 

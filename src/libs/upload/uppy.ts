@@ -2,10 +2,13 @@ import AwsS3, {type AwsBody} from "@uppy/aws-s3";
 import Uppy from "@uppy/core";
 import {
   createFileUrl,
+  createObjectUrl,
   createS3Endpoint,
   resolveS3Credentials,
 } from "./config";
+import {createAttachmentContentDisposition} from "./content-disposition";
 import {createObjectName} from "./object-key";
+import {registerContentDispositionHeader} from "./request-headers";
 import type {
   S3UploadConfig,
   UploadedFile,
@@ -23,8 +26,10 @@ export async function uploadFileWithUppy(
         resolveS3Credentials(config);
 
     // 对象 Key 和 Endpoint 在一次上传生命周期内保持不变，避免分片请求目标不一致。
-    const objectName = createObjectName(config.dir, file.name);
+    // 中文文件名会在这里异步转换为 MD5，后续所有分片共享同一个对象 Key。
+    const objectName = await createObjectName(config.dir, file.name);
     const s3Endpoint = createS3Endpoint(config);
+    const objectUrl = createObjectUrl(s3Endpoint, objectName);
     // AWS S3 要求 Multipart 的分片通常至少为 5 MiB，因此小文件强制使用普通 PUT。
     const useMultipart =
         file.size >= config.multipartUploadThreshold && file.size > 5 * 1024 * 1024;
@@ -55,6 +60,12 @@ export async function uploadFileWithUppy(
         limit: config.parallel,
         allowedMetaFields: false,
     });
+
+    // Uppy 初始化成功后再注册 Header，避免初始化异常时遗留 XHR 拦截器。
+    const unregisterContentDisposition = registerContentDispositionHeader(
+        objectUrl,
+        createAttachmentContentDisposition(file.name),
+    );
 
     try {
         // 将原生 File 注册到 Uppy，并在浏览器未提供 MIME 时使用通用二进制类型。
@@ -102,6 +113,7 @@ export async function uploadFileWithUppy(
             uploadMode: useMultipart ? "multipart" : "put",
         };
     } finally {
+        unregisterContentDisposition();
         // 无论成功还是异常都销毁实例，释放事件监听器及 Multipart 相关资源。
         uppy.destroy();
     }
