@@ -15,9 +15,30 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 24
+      - name: Build package
+        run: |
+          yarn
+          npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 1
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 24
           registry-url: ${{secrets.REGISTRY}}
-      - run: yarn
-      - run: npm run build
-      - run: npm publish
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: Publish package
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
