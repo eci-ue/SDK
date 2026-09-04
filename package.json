@@ -1,6 +1,6 @@
 {
   "name": "@ue/sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A framework-agnostic TypeScript SDK.",
   "private": false,
   "type": "module",
@@ -19,7 +19,7 @@
     "build": "npm run clean && vite build && tsc -p tsconfig.build.json",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "dev": "vite build --watch",
-    "test": "node --experimental-strip-types --test test/signer.test.ts",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

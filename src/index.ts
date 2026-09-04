@@ -21,6 +21,7 @@ export {
     StackShaHash,
 } from "./libs/hash";
 export {
+    AcceptCheck,
     createAttachmentContentDisposition,
     createFileUrl,
     createObjectName,
@@ -29,6 +30,8 @@ export {
     upload,
 } from "./libs/upload";
 export type {
+    AcceptFile,
+    AcceptFun,
     FileSignaturePayload,
     FileSignatureResult,
     S3UploadConfig,

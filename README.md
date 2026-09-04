@@ -21,6 +21,7 @@ import {
     MD5Hash,
     Sha256Hash,
     StackShaHash,
+    AcceptCheck,
     upload,
     createFileUrl,
     createObjectName,
@@ -34,6 +35,8 @@ import {
 ```ts
 import type {
     Plugin,
+    AcceptFile,
+    AcceptFun,
     FileSignaturePayload,
     FileSignatureResult,
     S3UploadConfig,
@@ -46,6 +49,52 @@ import type {
 ```
 
 ## 文件上传
+
+### `AcceptCheck(accept, file)`
+
+在上传前判断文件是否符合格式要求。`file` 只需提供文件名，可按需提供 MIME 类型，因此既可以传入浏览器原生 `File`，也可以传入普通文件信息对象。
+
+```ts
+import {AcceptCheck} from "@ue/sdk";
+
+const input = document.querySelector<HTMLInputElement>("#file")!;
+const file = input.files?.[0];
+
+if (file && !(await AcceptCheck("image/*, .pdf", file))) {
+    throw new Error("仅支持图片或 PDF 文件");
+}
+```
+
+字符串规则支持以下写法：
+
+| 写法 | 作用 |
+| --- | --- |
+| `*` | 接受任意文件 |
+| `image/*` | 接受 MIME 类型为图片的文件 |
+| `video/*` | 接受 MIME 类型为视频的文件 |
+| `.png` 或 `png` | 按文件扩展名匹配，不区分大小写 |
+| `.png,.jpg pdf` | 同时指定多个格式；支持中英文逗号、顿号和空白分隔 |
+
+也可以传入同步或异步自定义校验函数。自定义函数可能返回 `Promise`，通用调用场景建议统一使用 `await`：
+
+```ts
+import {AcceptCheck} from "@ue/sdk";
+import type {AcceptFun} from "@ue/sdk";
+
+const checkFile: AcceptFun = async (file) => {
+    const forbidden = await fetch(
+        `/api/files/forbidden?name=${encodeURIComponent(file.name)}`,
+    ).then((response) => response.json() as Promise<boolean>);
+    return !forbidden;
+};
+
+const candidate = {name: "report.pdf", type: "application/pdf"};
+if (!(await AcceptCheck(checkFile, candidate))) {
+    throw new Error("文件未通过校验");
+}
+```
+
+`accept` 为空时返回 `true`；规则不匹配、缺少待校验文件或文件没有通配规则所需的 MIME 类型时返回 `false`。自定义校验函数抛出的异常会继续向调用方抛出。
 
 ### `upload(file, options)`
 
@@ -215,6 +264,8 @@ Content-Disposition: attachment; filename="download.txt"; filename*=UTF-8''%E7%A
 
 | 类型 | 用途 |
 | --- | --- |
+| `AcceptFile` | `AcceptCheck` 所需的最小文件信息，包含 `name` 和可选的 `type` |
+| `AcceptFun` | 自定义同步或异步文件格式校验函数 |
 | `FileSignaturePayload` | 传给指纹检查和上传配置服务的文件信息 |
 | `FileSignatureResult` | 指纹检查结果；命中时可携带对象 Key 和访问地址 |
 | `S3UploadConfig` | S3 凭证、Endpoint、分片及并发配置 |
