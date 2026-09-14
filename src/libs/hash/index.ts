@@ -3,3 +3,8 @@ export {
     createSha256Hash as Sha256Hash,
     createStackShaHash as StackShaHash,
 } from "./sha256";
+export {
+    createFileHash as FileHash,
+    hashFileByFixedSamples,
+    hashFullFile as FileFullHash,
+} from "./file";

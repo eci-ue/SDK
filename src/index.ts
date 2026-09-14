@@ -17,8 +17,11 @@ export * as path from "./utils/path";
 export {createFileFingerprint as FileFingerprint} from "./libs/fingerprint";
 export {
     MD5Hash,
+    FileHash,
+    hashFileByFixedSamples,
     Sha256Hash,
     StackShaHash,
+    FileFullHash,
 } from "./libs/hash";
 export {
     AcceptCheck,

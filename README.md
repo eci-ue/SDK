@@ -18,6 +18,9 @@ import {
     URL,
     path,
     FileFingerprint,
+    FileHash,
+    FileFullHash,
+    hashFileByFixedSamples,
     MD5Hash,
     Sha256Hash,
     StackShaHash,
@@ -295,7 +298,7 @@ console.log(fingerprint);
 
 ## Hash 方法
 
-包根入口仅导出 `MD5Hash`、`Sha256Hash` 和 `StackShaHash`；内部的 `createMd5Hash`、`createSha256Hash`、`createStackShaHash` 不属于对外 API。
+包根入口导出 `MD5Hash`、`Sha256Hash`、`StackShaHash`、`FileHash`、`FileFullHash` 和 `hashFileByFixedSamples`；其他内部的 Hash 创建函数不属于对外 API。
 
 ### `MD5Hash(content)`
 
@@ -341,6 +344,51 @@ const digest = hash.digest();
 ```
 
 `digest()` 会结束本轮计算；需要计算新内容时应重新调用 `StackShaHash()`。
+
+### `FileHash(file)`
+
+计算浏览器 `File` 对象的 SHA-256 Hash：
+
+```ts
+import {FileHash} from "@ue/sdk";
+
+const hash = await FileHash(file);
+```
+
+- 不超过 20 MiB 的文件计算完整内容。
+- 大于 20 MiB 的文件按 1 MiB 分成多份，每份取前 10 KiB；最后一份不足 10 KiB 时读取整个分片。
+- 最终结果是所有分片 Hash 拼接后再次计算得到的 SHA-256 Hash。
+
+### `FileFullHash(file, fullFileHashMaxSize?)`
+
+计算浏览器 `File` 对象的 SHA-256 Hash：
+
+```ts
+import {FileFullHash} from "@ue/sdk";
+
+const hash = await FileFullHash(file);
+```
+
+- 不传 `fullFileHashMaxSize` 时，默认不超过 1 GiB 的文件读取完整内容，并以 512 KiB 为单位分块处理，避免一次性将整个文件载入内存。
+- 传入 `fullFileHashMaxSize` 可以自定义完整计算的大小上限，单位为字节；超过该上限后采用分段采样。
+- 超过完整计算上限的文件按 1 MiB 分成多份，每份取前 10 KiB 计算 Hash；最后一份不足 10 KiB 时读取整个分片。
+- 最终结果是所有分片 Hash 拼接后再次计算得到的 SHA-256 Hash。
+
+由于不同设备的 CPU、内存和磁盘读取性能存在差异，大文件完整计算可能占用较多系统资源并影响页面响应。建议根据目标设备性能合理设置 `fullFileHashMaxSize`；性能较弱的设备应适当降低该值，让大文件更早采用分段采样。
+
+### `hashFileByFixedSamples(file)`
+
+直接按固定分片规则计算文件采样 Hash，适合需要主动控制采样策略的场景：
+
+```ts
+import {hashFileByFixedSamples} from "@ue/sdk";
+
+const hash = await hashFileByFixedSamples(file);
+```
+
+- 文件按 1 MiB 分成多份，每份取前 10 KiB 计算 Hash。
+- 最后一份不足 10 KiB 时读取整个分片。
+- 最终结果是所有分片 Hash 拼接后再次计算得到的 SHA-256 Hash。
 
 ## URL 方法
 
