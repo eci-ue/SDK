@@ -3,11 +3,16 @@
 
 	var helper;
 	var showTimer;
+	var repositionTimer;
 	var suppressUntil = 0;
 	var displayedMonth;
 	var selectionRequest = 0;
 	var dateNumberFormat = "yyyy/mm/dd";
 	var lastEditorClick = {address: "", time: 0};
+	var pickerTargetAddress = "";
+	var usesAttachedEditorEvents = false;
+	var helperWidth = 270;
+	var helperHeight = 260;
 
 	function toDateString(date) {
 		var year = date.getFullYear();
@@ -105,17 +110,27 @@
 		}
 	}
 
-	function showDatePicker() {
-		if (!helper || Date.now() < suppressUntil) {
+	function showDatePicker(requestId) {
+		if (!helper || Date.now() < suppressUntil || requestId !== selectionRequest) {
 			return;
 		}
 
-		// Keep the original calendar size so all date buttons remain available,
-		// while leaving keyboard capture disabled for reliable mouse clicks.
-		helper.show(270, 260, false);
+		// Wait for the editor to finish applying the new target position before
+		// showing the helper. Showing it from the click callback can use the
+		// previous position (0, 0), especially on the first click.
+		clearTimeout(repositionTimer);
+		repositionTimer = setTimeout(function () {
+			if (!helper || Date.now() < suppressUntil || requestId !== selectionRequest) {
+				return;
+			}
+
+			// Keep the original calendar size so all date buttons remain available,
+			// while leaving keyboard capture disabled for reliable mouse clicks.
+			helper.show(helperWidth, helperHeight, false);
+		}, 0);
 	}
 
-	function checkActiveCellFormat(requestId) {
+	function checkActiveCellFormat(requestId, verificationAttempt) {
 		if (!helper || Date.now() < suppressUntil || requestId !== selectionRequest) {
 			return;
 		}
@@ -123,27 +138,52 @@
 		window.Asc.plugin.callCommand(function () {
 			var worksheet = Api.GetActiveSheet();
 			var activeCell = worksheet && worksheet.GetActiveCell();
-			return activeCell ? activeCell.GetNumberFormat() : "";
-		}, false, false, function (format) {
+			if (!activeCell) {
+				return null;
+			}
+
+			return {
+				address: activeCell.GetAddress(),
+				format: activeCell.GetNumberFormat(),
+			};
+		}, false, false, function (cellInfo) {
 			if (requestId !== selectionRequest) {
 				return;
 			}
-			console.log(format);
-			if (isDateFormat(format)) {
-				showDatePicker();
+			if (cellInfo && isDateFormat(cellInfo.format)) {
+				// A spreadsheet click and the plugin command queue can complete in
+				// different orders. Confirm the format once more before opening so a
+				// stale date-cell result cannot reopen the helper on another cell.
+				if (verificationAttempt !== 1) {
+					clearTimeout(showTimer);
+					showTimer = setTimeout(function () {
+						checkActiveCellFormat(requestId, 1);
+					}, 32);
+					return;
+				}
+				pickerTargetAddress = cellInfo.address || pickerTargetAddress;
+				showDatePicker(requestId);
 			} else {
 				hideDatePicker();
 			}
 		});
 	}
 
-	function scheduleDatePicker() {
+	function scheduleDatePicker(delay) {
 		clearTimeout(showTimer);
+		clearTimeout(repositionTimer);
 		var requestId = ++selectionRequest;
 		hideDatePicker();
 		showTimer = setTimeout(function () {
-			checkActiveCellFormat(requestId);
-		}, 80);
+			checkActiveCellFormat(requestId, 0);
+		}, typeof delay === "number" ? delay : 0);
+	}
+
+	function handleExternalMouseUp() {
+		// The spreadsheet is outside the plugin iframe. Hide immediately when
+		// the user releases the mouse there; the selection/click handlers will
+		// decide whether a new date helper should be shown.
+		hideDatePicker();
 	}
 
 	function clearDateCellContent() {
@@ -169,7 +209,9 @@
 		// Re-anchor the input helper on every spreadsheet click. Otherwise,
 		// ONLYOFFICE may keep the previous cell's popup position after selection
 		// changes.
-		scheduleDatePicker();
+		// Invalidate the current request immediately so a pending date-cell query
+		// cannot reopen the popup after the user clicks a non-date cell.
+		scheduleDatePicker(16);
 		var clickTime = Date.now();
 
 		window.Asc.plugin.callCommand(function () {
@@ -210,15 +252,24 @@
 		displayedMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 		renderCalendar();
 
-	if (typeof window.Asc.plugin.attachEditorEvent === "function") {
-		window.Asc.plugin.attachEditorEvent("onTargetPositionChanged", scheduleDatePicker);
-		window.Asc.plugin.attachEditorEvent("onClick", handleEditorClick);
+		// Create the host-side helper window before the first real interaction.
+		// The first ShowInputHelper call otherwise includes iframe/window setup
+		// and can briefly use the default (top-left) position.
+		helper.show(helperWidth, helperHeight, false);
+		helper.unShow();
+
+		usesAttachedEditorEvents = typeof window.Asc.plugin.attachEditorEvent === "function";
+		if (usesAttachedEditorEvents) {
+			window.Asc.plugin.attachEditorEvent("onTargetPositionChanged", scheduleDatePicker);
+			window.Asc.plugin.attachEditorEvent("onClick", handleEditorClick);
+			window.Asc.plugin.attachEditorEvent("onExternalMouseUp", handleExternalMouseUp);
+		} else {
+			// Used by ONLYOFFICE versions before attachEditorEvent was introduced.
+			window.Asc.plugin.event_onTargetPositionChanged = scheduleDatePicker;
+			window.Asc.plugin.event_onClick = handleEditorClick;
+			window.Asc.plugin.event_onExternalMouseUp = handleExternalMouseUp;
 		}
 	};
-
-  // Used by ONLYOFFICE versions before attachEditorEvent was introduced.
-	window.Asc.plugin.event_onTargetPositionChanged = scheduleDatePicker;
-	window.Asc.plugin.event_onClick = handleEditorClick;
 
 	function toExcelSerial(value) {
 		var parts = String(value).split("-");
@@ -252,13 +303,18 @@
 
 		window.Asc.scope.dateValue = dateValue;
 		window.Asc.scope.numberFormat = dateNumberFormat;
+		window.Asc.scope.targetAddress = pickerTargetAddress;
 
 		// Follow the official Datepicker plugin: write a numeric Excel date from
 		// inside callCommand, and apply it to the current selection/cell.
 		window.Asc.plugin.callCommand(function () {
 			var worksheet = Api.GetActiveSheet();
+			var targetAddress = Asc.scope.targetAddress;
+			var target = targetAddress && worksheet && typeof worksheet.GetRange === "function"
+				? worksheet.GetRange(targetAddress)
+				: null;
 			var selection = worksheet && worksheet.GetSelection();
-			var target = selection || (worksheet && worksheet.GetActiveCell());
+			target = target || selection || (worksheet && worksheet.GetActiveCell());
 			var valueToWrite = Asc.scope.dateValue;
 			var numberFormat = Asc.scope.numberFormat;
 
@@ -288,12 +344,14 @@
 				console.error("日期写入单元格失败", result);
 			}
 			helper.unShow();
+			pickerTargetAddress = "";
 		});
 
 		// callCommand serializes Asc.scope when it is invoked, so it is safe to
 		// remove these temporary values immediately after dispatching the command.
 		delete window.Asc.scope.dateValue;
 		delete window.Asc.scope.numberFormat;
+		delete window.Asc.scope.targetAddress;
 	}
 
   document.addEventListener("click", function (event) {
@@ -329,10 +387,12 @@
 
 	window.Asc.plugin.onDestroy = function () {
 		clearTimeout(showTimer);
+		clearTimeout(repositionTimer);
 		selectionRequest += 1;
-    if (typeof window.Asc.plugin.detachEditorEvent === "function") {
-      window.Asc.plugin.detachEditorEvent("onTargetPositionChanged");
-		window.Asc.plugin.detachEditorEvent("onClick");
-    }
+		if (usesAttachedEditorEvents && typeof window.Asc.plugin.detachEditorEvent === "function") {
+			window.Asc.plugin.detachEditorEvent("onTargetPositionChanged");
+			window.Asc.plugin.detachEditorEvent("onClick");
+			window.Asc.plugin.detachEditorEvent("onExternalMouseUp");
+		}
 	};
 })(window);
