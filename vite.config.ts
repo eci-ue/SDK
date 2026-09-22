@@ -1,7 +1,13 @@
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
+import {onlyOfficeAssetsPlugin} from "./src/libs/onlyoffice/vite.ts";
 
 export default defineConfig({
+  plugins: [
+    onlyOfficeAssetsPlugin({
+      sourceDirectory: fileURLToPath(new URL("./src/libs/onlyoffice/assets/", import.meta.url)),
+    }),
+  ],
   server: {
     proxy: {
       "/api": {
@@ -23,9 +29,15 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
+      entry: {
+        index: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
+        vite: fileURLToPath(new URL("./src/vite.ts", import.meta.url)),
+      },
       formats: ["es", "cjs"],
-      fileName: (format) => (format === "es" ? "index.js" : "index.cjs"),
+      fileName: (format, entryName) => {
+        const name = entryName === "vite" ? "vite" : "index";
+        return format === "es" ? `${name}.js` : `${name}.cjs`;
+      },
     },
     sourcemap: true,
     minify: false,
@@ -34,6 +46,8 @@ export default defineConfig({
         "@uppy/aws-s3",
         "@uppy/core",
         "hash-wasm",
+        "node:fs",
+        "node:path",
       ],
     },
   },

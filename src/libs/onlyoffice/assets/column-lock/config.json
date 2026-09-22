@@ -1,0 +1,23 @@
+{
+  "name": "列禁用",
+  "guid": "asc.{98CBCAA1-3113-4A12-AE5F-2B6801F71F3C}",
+  "version": "2.0.2",
+  "minVersion": "8.1.1",
+  "variations": [
+    {
+      "description": "按业务规则自动设置列保护",
+      "url": "index.html",
+      "icons": ["resources/img/icon.svg"],
+      "isViewer": false,
+      "EditorsSupport": ["cell"],
+      "isVisual": false,
+      "isModal": false,
+      "isInsideMode": false,
+      "isSystem": true,
+      "initDataType": "none",
+      "initData": "",
+      "buttons": [],
+      "events": ["onDocumentContentReady"]
+    }
+  ]
+}

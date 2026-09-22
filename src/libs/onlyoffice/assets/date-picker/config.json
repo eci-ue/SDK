@@ -1,0 +1,23 @@
+{
+  "name": "日期选择",
+  "guid": "asc.{66B5BFEB-80B8-45AB-A7EE-C0C341E6F3D6}",
+  "version": "1.4.1",
+  "minVersion": "7.0.0",
+  "variations": [
+    {
+      "description": "点击单元格选择日期",
+      "url": "index.html",
+      "icons": ["resources/img/icon.svg"],
+      "isViewer": false,
+      "EditorsSupport": ["cell"],
+      "isVisual": false,
+      "isModal": false,
+      "isInsideMode": false,
+      "isSystem": true,
+      "initDataType": "none",
+      "initData": "",
+      "buttons": [],
+      "events": ["onTargetPositionChanged", "onClick"]
+    }
+  ]
+}

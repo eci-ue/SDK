@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>日期选择</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://onlyoffice.github.io/sdkjs-plugins/v1/plugins.js"></script>
+  <script src="https://onlyoffice.github.io/sdkjs-plugins/v1/plugins-ui.js"></script>
+</head>
+<body>
+  <main class="calendar" aria-label="日期选择">
+    <header class="calendar__header">
+      <button type="button" class="calendar__nav" data-action="previous" aria-label="上个月">‹</button>
+      <strong id="month-label"></strong>
+      <button type="button" class="calendar__nav" data-action="next" aria-label="下个月">›</button>
+    </header>
+    <div class="calendar__weekdays" aria-hidden="true">
+      <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+    </div>
+    <div id="days" class="calendar__days"></div>
+    <footer class="calendar__footer">
+      <button type="button" class="calendar__today" data-action="today">今天</button>
+    </footer>
+  </main>
+  <script src="code.js?v=1.4.1"></script>
+</body>
+</html>

@@ -14,6 +14,9 @@ export function definePlugin<T extends Plugin>(plugin: T): T {
 
 export {URL} from "./utils/url";
 export * as path from "./utils/path";
+export * from "./libs/onlyoffice";
+export * from "./libs/cookie";
+export * from "./libs/language";
 export {createFileFingerprint as FileFingerprint} from "./libs/fingerprint";
 export {
     MD5Hash,

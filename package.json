@@ -1,6 +1,6 @@
 {
   "name": "@ue/sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A framework-agnostic TypeScript SDK.",
   "private": false,
   "type": "module",
@@ -13,6 +13,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.js",
+      "require": "./dist/vite.cjs"
     }
   },
   "scripts": {
@@ -34,6 +39,7 @@
     "url": "https://github.com/svonme"
   },
   "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^26.4.1",
     "typescript": "^7.0.2",
     "vite": "^8.2.2"
@@ -47,6 +53,7 @@
   "dependencies": {
     "@uppy/aws-s3": "^6.0.0",
     "@uppy/core": "^6.0.0",
-    "hash-wasm": "^4.12.0"
+    "hash-wasm": "^4.12.0",
+    "js-cookie": "^3.0.8"
   }
 }
