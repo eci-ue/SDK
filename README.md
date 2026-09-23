@@ -17,6 +17,9 @@ import {
     definePlugin,
     URL,
     path,
+    base64,
+    watermark,
+    copy,
     FileFingerprint,
     FileHash,
     FileFullHash,
@@ -38,6 +41,7 @@ import {
 ```ts
 import type {
     Plugin,
+    WatermarkOptions,
     AcceptFile,
     AcceptFun,
     FileSignaturePayload,
@@ -420,6 +424,59 @@ new SDKURL(value?, domain?)
 
 - `value`：绝对地址或相对路径，默认 `/`。
 - `domain`：相对路径使用的基础域名；浏览器中默认使用当前页面域名，非浏览器环境默认使用 `http://localhost`。
+
+## Base64 与水印
+
+Base64 与水印功能分别通过 `base64` 和 `watermark` 命名空间导出：
+
+```ts
+import {base64, watermark} from "@ue/sdk";
+```
+
+### `base64.Encode(value)` / `base64.Decode(value)`
+
+按 UTF-8 编码转换字符串，支持中文等非 ASCII 字符：
+
+```ts
+const encoded = base64.Encode("内部资料");
+const value = base64.Decode(encoded);
+```
+
+### `watermark.textToBase64SVG(text, options?)`
+
+将文本生成可直接用于图片 `src` 或 CSS `background-image` 的 Base64 SVG 水印。
+
+| 配置项 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `fontSize` | `number` | `20` | 文字大小 |
+| `color` | `string` | `rgba(0,0,0,0.05)` | 文字颜色 |
+| `width` | `number` | `200` | SVG 最小宽度，文字较长时会自动扩展 |
+| `height` | `number` | `160` | SVG 高度 |
+| `rotate` | `number` | `-25` | 文字旋转角度 |
+
+```ts
+const value = watermark.textToBase64SVG("内部资料", {
+    color: "rgba(0,0,0,0.05)",
+    rotate: -25,
+});
+```
+
+## 剪贴板
+
+### `copy.text(value)`
+
+将文本复制到系统剪贴板，返回 `Promise<boolean>` 表示是否复制成功。SDK 优先使用 Clipboard API，并在不可用时使用原生 `textarea` 方案回退，不依赖 jQuery 或 UI 框架。
+
+复制操作应直接由用户点击、键盘操作等交互事件触发；Clipboard API 通常要求 HTTPS 等安全上下文。复制成功或失败后的通知由业务层自行处理。
+
+```ts
+import {copy} from "@ue/sdk";
+
+const success = await copy.text("内部资料");
+if (!success) {
+    console.error("复制失败");
+}
+```
 
 ## 路径方法
 

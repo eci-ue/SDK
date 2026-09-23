@@ -14,6 +14,10 @@ export function definePlugin<T extends Plugin>(plugin: T): T {
 
 export {URL} from "./utils/url";
 export * as path from "./utils/path";
+export * as base64 from "./utils/base64";
+export * as watermark from "./utils/watermark";
+export * as copy from "./utils/copy";
+export type {WatermarkOptions} from "./utils/watermark";
 export * from "./libs/onlyoffice";
 export * from "./libs/cookie";
 export * from "./libs/language";
